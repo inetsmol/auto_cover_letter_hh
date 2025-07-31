@@ -1,6 +1,9 @@
 .venv
 .idea
 .env
+/migrations
+
+pyproject.toml
 
 # Python
 __pycache__
