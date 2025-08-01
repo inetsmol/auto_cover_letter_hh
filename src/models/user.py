@@ -24,4 +24,4 @@ class User(Model):
 
     user_status = fields.CharField(max_length=10, choices=USER_STATUS_CHOICES, default='active')
 
-    vacancies: fields.ReverseRelation["Vacancy"]
+    resume: fields.ReverseRelation["Resume"]

@@ -6,6 +6,7 @@ from aiogram.types import Update
 
 from src.bot_init import bot, dp
 from src.handlers.base import base_router
+from src.handlers.hh_auth import auth_router
 from src.services.startup import on_startup, on_shutdown
 from src.config import config
 
@@ -26,6 +27,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(base_router)
+app.include_router(auth_router)
 
 
 # --- webhook route ---

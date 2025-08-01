@@ -21,6 +21,12 @@ class BotConfig(ConfigBase):
     webhook_secret: SecretStr = "DFer1234"
     webhook_url: str = "https://example.com/webhook"
     webhook_path: str = "/webhook"
+    admins: str = "693131974"
+    admin_id: int = 693131974
+
+    @property
+    def admin_ids(self) -> list[int]:
+        return [int(admin_id) for admin_id in self.admins.split(",") if admin_id.isdigit()]
 
 
 class DatabaseConfig(ConfigBase):
@@ -48,16 +54,31 @@ class RedisConfig(ConfigBase):
     port: int = 6379
     db: int = 0
     expiration: int = 3600
+    access_token_key: str = "hh_access_token"
 
     @property
     def dsn(self) -> str:
         return f"redis://{self.host}:{self.port}/{self.db}"
 
 
+class HH(ConfigBase):
+    model_config = SettingsConfigDict(env_prefix="HH_")
+
+    client_id: SecretStr
+    client_secret: SecretStr
+    redirect_uri: str
+    token_url: str
+    resume_url: str
+
+    @property
+    def auth_url(self) -> str:
+        return f"https://hh.ru/oauth/authorize?response_type=code&client_id={self.client_id.get_secret_value()}&redirect_uri={self.redirect_uri}"
+
 class Config(ConfigBase):
     bot: BotConfig = BotConfig()
     database: DatabaseConfig = DatabaseConfig()
     redis: RedisConfig = RedisConfig()
+    hh: HH = HH()
 
 
 config = Config()

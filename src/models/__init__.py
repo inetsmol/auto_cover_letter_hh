@@ -1,3 +1,4 @@
 # src/models/__init__.py
 from .user import User
-from .vacancy import Vacancy
+from .resume import Resume
+from .hh_token import HHToken
