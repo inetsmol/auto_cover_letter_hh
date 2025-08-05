@@ -5,6 +5,8 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
+from src.config import config
+from src.keyboards.reply_kb import get_keyboard
 from src.keyboards.resume_kb import get_resume_actions_inline_kb
 from src.models import Resume, User
 from src.services.resume import get_resume, extract_keywords
@@ -15,18 +17,31 @@ router = Router()
 
 @router.message(lambda m: m.text == "Добавить резюме")
 async def add_resume_start(message: Message, state: FSMContext):
+    if message.from_user.id in config.bot.admin_ids:
+        is_user_admin = True
+    else:
+        is_user_admin = False
     await message.answer("Пожалуйста, пришли ссылку на своё резюме hh.ru в формате:\n\n"
-                         "https://hh.ru/resume/ВАШ_ID")
+                         "https://hh.ru/resume/ВАШ_ID",
+                         reply_markup=get_keyboard(is_user_admin)
+                         )
     await state.set_state(AddResumeStates.waiting_for_resume_url)
 
 
 @router.message(AddResumeStates.waiting_for_resume_url)
 async def resume_url_received(message: Message, state: FSMContext):
+    if message.from_user.id in config.bot.admin_ids:
+        is_user_admin = True
+    else:
+        is_user_admin = False
+
     resume_url = message.text.strip()
     match = re.match(r"^https://hh\.ru/resume/([a-fA-F0-9]{38})$", resume_url)
     if not match:
         await message.answer("❗️Пожалуйста, отправь корректную ссылку на резюме с hh.ru в формате:\n\n"
-                             "https://hh.ru/resume/ВАШ_ID")
+                             "https://hh.ru/resume/ВАШ_ID",
+                             reply_markup=get_keyboard(is_user_admin)
+                             )
         # Сохраняем state, не сбрасываем!
         return
     resume_id = match.group(1)

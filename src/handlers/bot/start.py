@@ -35,7 +35,7 @@ async def start_handler(message: Message, state: FSMContext):
         is_user_admin = True
     else:
         is_user_admin = False
-    keyboard = get_keyboard(is_user_admin)
+    keyboard = get_keyboard(is_user_admin, is_persistent=False)
     await message.answer(text="👋 Привет! Я зарегистрировал тебя и готов к работе.", reply_markup=keyboard)
     await state.clear()
 

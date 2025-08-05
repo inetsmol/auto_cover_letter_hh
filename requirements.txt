@@ -9,3 +9,5 @@ pydantic-settings
 uvicorn
 fastapi
 httpx
+openai
+celery[redis]

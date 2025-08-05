@@ -29,6 +29,13 @@ class BotConfig(ConfigBase):
         return [int(admin_id) for admin_id in self.admins.split(",") if admin_id.isdigit()]
 
 
+class AIConfig(ConfigBase):
+    model_config = SettingsConfigDict(env_prefix="AI_")
+
+    openai_api_key: SecretStr
+    proxy_url: str
+
+
 class DatabaseConfig(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="DB_")
 
@@ -76,6 +83,7 @@ class HH(ConfigBase):
 
 class Config(ConfigBase):
     bot: BotConfig = BotConfig()
+    ai: AIConfig = AIConfig()
     database: DatabaseConfig = DatabaseConfig()
     redis: RedisConfig = RedisConfig()
     hh: HH = HH()

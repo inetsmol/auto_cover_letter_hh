@@ -2,7 +2,7 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 
-def get_keyboard(is_admin: bool):
+def get_keyboard(is_admin: bool, is_persistent: bool = True):
     # Создаем кнопки с локализованным текстом
     add_resume_button = KeyboardButton(text="Добавить резюме")
     get_resume_button = KeyboardButton(text="Мои резюме")
@@ -18,4 +18,4 @@ def get_keyboard(is_admin: bool):
     if is_admin:
         keyboard.append([start_admin_settings_button])
 
-    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, one_time_keyboard=False)
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True, one_time_keyboard=False, is_persistent=is_persistent)
