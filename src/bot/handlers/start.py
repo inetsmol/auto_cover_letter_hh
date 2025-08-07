@@ -50,3 +50,16 @@ async def show_main_menu(call: CallbackQuery, state):
         reply_markup=get_main_menu(is_admin)
     )
     await call.answer()
+
+
+@router.callback_query(F.data == "menu:cancel")
+async def cancel_and_main_menu(call: CallbackQuery, state):
+    await call.message.delete()
+    await state.clear()
+    is_admin = call.from_user.id in config.bot.admin_ids
+    await call.message.answer("Действие отменено.")
+    await call.message.answer(
+        "Главное меню:",
+        reply_markup=get_main_menu(is_admin)
+    )
+    await call.answer()

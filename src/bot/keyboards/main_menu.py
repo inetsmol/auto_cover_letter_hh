@@ -2,6 +2,15 @@
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+
+def cancel_menu():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="❌ Отменить", callback_data="menu:cancel")
+        ]
+    ])
+
+
 def user_main_menu():
     """Главное меню для обычного пользователя."""
     return InlineKeyboardMarkup(inline_keyboard=[

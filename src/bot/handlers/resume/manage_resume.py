@@ -32,8 +32,9 @@ async def delete_resume_handler(call: CallbackQuery, resume_id, resume, state):
             {"id": r.id, "title": (r.resume_json or {}).get('title', 'Без названия')}
             for r in resumes
         ]
+        await call.message.answer("Резюме удалено.")
         await call.message.answer(
-            "Резюме удалено.\n\nВаши резюме:",
+            "Ваши резюме:",
             reply_markup=resumes_list_menu(buttons_data)
         )
     else:
