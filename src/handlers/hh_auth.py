@@ -6,9 +6,9 @@ import httpx
 from fastapi import APIRouter
 from starlette.requests import Request
 
-from src.bot_init import redis
 from src.config import config
 from src.models import HHToken
+from src.redis_init import redis
 
 auth_router = APIRouter()
 
@@ -20,10 +20,11 @@ async def callback(request: Request):
         return {"error": "Authorization code not found in redirect"}
 
     await exchange_code_for_token(code)
-    return None
+    return {"status": "success", "message": "Authorization completed"}
 
 
 async def exchange_code_for_token(code: str):
+    """Обменивает код авторизации на токены"""
     url = "https://hh.ru/oauth/token"
     data = {
         "grant_type": "authorization_code",
@@ -37,6 +38,7 @@ async def exchange_code_for_token(code: str):
         response = await client.post(url, data=data)
         if response.status_code != 200:
             return {"error": f"Failed to get tokens: {response.text}"}
+
         tokens = response.json()
         access_token = tokens.get("access_token")
         refresh_token = tokens.get("refresh_token")
@@ -55,5 +57,4 @@ async def exchange_code_for_token(code: str):
 
         # Сохраняем в Redis
         await redis.set(config.redis.access_token_key, access_token, ex=expires_in)
-        return None
-
+        return {"status": "success"}

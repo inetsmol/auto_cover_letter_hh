@@ -9,7 +9,8 @@ from src.config import config
 from src.keyboards.reply_kb import get_keyboard
 from src.keyboards.resume_kb import get_resume_actions_inline_kb
 from src.models import Resume, User
-from src.services.resume import get_resume, extract_keywords
+from src.services.hh_client import hh_client
+from src.services.resume import extract_keywords
 from src.states.user_states import AddResumeStates
 
 router = Router()
@@ -44,8 +45,17 @@ async def resume_url_received(message: Message, state: FSMContext):
                              )
         # Сохраняем state, не сбрасываем!
         return
+
     resume_id = match.group(1)
-    resume_json = await get_resume(resume_id)
+
+    try:
+        resume_json = await hh_client.get_resume(resume_id)
+    except Exception as e:
+        await message.answer(f"❗️Ошибка при получении резюме: {e}\n\n"
+                             "Проверьте, что резюме доступно и ссылка корректна.",
+                             reply_markup=get_keyboard(is_user_admin))
+        return
+
     positive_keywords = extract_keywords(resume_json["title"])
 
     user = await User.get_or_none(id=message.from_user.id)
@@ -172,3 +182,40 @@ async def handle_start_apply_callback(call: CallbackQuery, state: FSMContext):
     )
     await state.clear()
     await call.answer()  # Убираем "часики" с кнопки
+
+
+@router.message(lambda m: m.text == "Мои резюме")
+async def my_resumes_handler(message: Message, state: FSMContext):
+    """Показывает список резюме пользователя"""
+    user_id = message.from_user.id
+
+    resumes = await Resume.filter(user_id=user_id).all()
+
+    if not resumes:
+        await message.answer("У вас пока нет добавленных резюме.\n\n"
+                             "Используйте кнопку 'Добавить резюме' чтобы добавить первое резюме.")
+        return
+
+    response_parts = ["📄 **Ваши резюме:**\n"]
+
+    for resume in resumes:
+        status_emoji = "✅" if resume.status == "active" else "⏸"
+
+        # Извлекаем название из resume_json
+        title = "Не указано"
+        if resume.resume_json and isinstance(resume.resume_json, dict):
+            title = resume.resume_json.get('title', 'Не указано')
+
+        response_parts.append(
+            f"{status_emoji} **{title}**\n"
+            f"ID: `{resume.id}`\n"
+            f"Статус: {resume.status}\n"
+            f"Ключевые слова: {', '.join(resume.positive_keywords or [])}\n"
+        )
+
+        if resume.negative_keywords:
+            response_parts.append(f"Исключения: {', '.join(resume.negative_keywords)}\n")
+
+        response_parts.append("─" * 30 + "\n")
+
+    await message.answer("\n".join(response_parts))

@@ -25,7 +25,9 @@ class Resume(Model):
 
     @property
     def keywords(self):
-        result = []
-        result.extend(self.positive_keywords or [])
-        result.extend(f"NOT {word}" for word in (self.negative_keywords or []))
-        return " ".join(result)
+        if not self.positive_keywords:
+            return ""  # Без ключевых слов поиск невозможен
+        search = " OR ".join(self.positive_keywords)
+        if self.negative_keywords:
+            search += " " + " ".join(f"NOT {w}" for w in self.negative_keywords)
+        return search

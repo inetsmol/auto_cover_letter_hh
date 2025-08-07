@@ -1,21 +1,18 @@
+# src/services/resume.py
 import re
-
-import httpx
-
-from src.config import config
-from src.hh_auth import get_headers
+from typing import List
 
 
-async def get_resume(resume_id):
-    url = f"{config.hh.resume_url}{resume_id}"
-    headers = await get_headers()
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
-        response.raise_for_status()  # Вызывает исключение для кодов 4xx/5xx
-        return response.json()
+def extract_keywords(text: str) -> List[str]:
+    """
+    Извлекает ключевые слова из текста
 
+    Args:
+        text: Текст для извлечения ключевых слов
 
-def extract_keywords(text: str) -> list[str]:
+    Returns:
+        List[str]: Список уникальных ключевых слов
+    """
     if not text:
         return []
 
