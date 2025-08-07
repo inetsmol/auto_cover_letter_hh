@@ -11,6 +11,6 @@ bot = Bot(token=config.bot.token.get_secret_value(), default=DefaultBotPropertie
 dp = Dispatcher(storage=storage)
 
 # Импортируем и регистрируем bot-хендлеры
-from src.handlers.bot import routers as bot_routers
+from src.bot.handlers import routers as bot_routers
 for router in bot_routers:
     dp.include_router(router)
