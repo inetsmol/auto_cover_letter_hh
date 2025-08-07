@@ -4,51 +4,24 @@ from aiogram.types import CallbackQuery
 
 from src.bot.keyboards.resume_management import manage_resume_menu, resumes_list_menu
 from src.models import Resume
+from src.utils.decorators import with_resume_from_callback
+from src.utils.formatters import format_resume_card
 
 router = Router()
 
 @router.callback_query(F.data.regexp(r"^resume:manage:(.+)"))
-async def manage_resume_callback(call: CallbackQuery, state):
-    await call.message.delete()
-
-    resume_id = call.data.split(":")[-1]
-    resume = await Resume.get_or_none(id=resume_id)
-
-    if not resume:
-        await call.message.answer("Резюме не найдено.")
-        await call.answer()
-        return
-
-    title = (resume.resume_json or {}).get('title', 'Без названия')
-    positive_keywords = ', '.join(resume.positive_keywords or [])
-    negative_keywords = ', '.join(resume.negative_keywords or [])
-    status = resume.status
-
-    text = (
-        f"<b>{title}</b>\n"
-        f"ID: <code>{resume.id}</code>\n"
-        f"Статус: {status}\n"
-        f"Ключевые слова: {positive_keywords or 'нет'}\n"
+@with_resume_from_callback
+async def manage_resume_callback(call: CallbackQuery, resume_id, resume, state):
+    await call.message.answer(
+        format_resume_card(resume),
+        reply_markup=manage_resume_menu(resume_id)
     )
-    if negative_keywords:
-        text += f"Исключения: {negative_keywords}\n"
-
-    await call.message.answer(text, reply_markup=manage_resume_menu(resume_id))
     await call.answer()
 
 
 @router.callback_query(F.data.regexp(r"^resume:delete:(.+)"))
-async def delete_resume_handler(call: CallbackQuery, state):
-    await call.message.delete()
-
-    resume_id = call.data.split(":")[-1]
-    resume = await Resume.get_or_none(id=resume_id)
-
-    if not resume:
-        await call.message.answer("Резюме не найдено или уже удалено.")
-        await call.answer()
-        return
-
+@with_resume_from_callback
+async def delete_resume_handler(call: CallbackQuery, resume_id, resume, state):
     user_id = call.from_user.id
     await resume.delete()
 
@@ -73,25 +46,21 @@ async def delete_resume_handler(call: CallbackQuery, state):
 
 
 @router.callback_query(F.data.regexp(r"^resume:status:(.+)"))
-async def change_status_handler(call: CallbackQuery, state):
-    await call.message.delete()
-
-    resume_id = call.data.split(":")[-1]
-    resume = await Resume.get_or_none(id=resume_id)
-
-    if not resume:
-        await call.message.answer("Резюме не найдено.")
-        await call.answer()
-        return
+@with_resume_from_callback
+async def change_status_handler(call: CallbackQuery, resume_id, resume, state):
 
     # Переключаем статус
     new_status = "inactive" if resume.status == "active" else "active"
     resume.status = new_status
     await resume.save()
 
-    status_emoji = "✅" if new_status == "active" else "⏸"
+    status_emoji = "✅" if new_status == "active" else "📁"
     await call.message.answer(
-        f"{status_emoji} Статус резюме изменён на: <b>{new_status}</b>.",
+        f"{status_emoji} Статус резюме изменён на: <b>{'Активно' if new_status == 'active' else 'В архиве'}</b>."
+    )
+
+    await call.message.answer(
+        format_resume_card(resume),
         reply_markup=manage_resume_menu(resume_id)
     )
     await call.answer()
