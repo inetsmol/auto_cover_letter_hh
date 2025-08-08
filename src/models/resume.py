@@ -2,6 +2,8 @@
 from tortoise.models import Model
 from tortoise import fields
 
+from src.utils.keywords import build_search_query
+
 
 class Resume(Model):
     class Meta:
@@ -24,10 +26,8 @@ class Resume(Model):
     status = fields.CharField(max_length=10, choices=STATUS_CHOICES, default='inactive')
 
     @property
-    def keywords(self):
-        if not self.positive_keywords:
-            return ""  # Без ключевых слов поиск невозможен
-        search = " OR ".join(self.positive_keywords)
-        if self.negative_keywords:
-            search += " " + " ".join(f"NOT {w}" for w in self.negative_keywords)
-        return search
+    def keywords(self) -> str:
+        """
+        Возвращает готовую строку для запроса HH API.
+        """
+        return build_search_query(self.positive_keywords, self.negative_keywords)
