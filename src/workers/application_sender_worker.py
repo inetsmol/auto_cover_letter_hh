@@ -140,8 +140,7 @@ async def _schedule_bulk_apply_async(user_id: Optional[int] = None,
     # рассчитать очередь для подзадач
     queue = force_queue or await _queue_for_user(user_id)
 
-    resumes = await Resume.filter(user_id=user_id, is_active=True).values_list("id", flat=True)
-    resumes = list(resumes)
+    resumes = list(await Resume.filter(user_id=user_id, is_active=True).values_list("id", flat=True))
 
     resumes_enqueued = 0
     for rid in resumes:
@@ -282,15 +281,7 @@ async def _apply_for_resume_async(resume_id: int) -> dict[str, Any]:
         return {"resume_id": resume_id, "vacancies_found": 0, "vacancies_enqueued": 0, "reason": "no_hh_resume_id"}
 
     # Текст для поиска
-    search_text = ""
-    if getattr(resume, "keywords", None):
-        kw = getattr(resume, "keywords")
-        if isinstance(kw, (list, tuple, set)):
-            search_text = " ".join(map(str, kw))
-        else:
-            search_text = str(kw)
-    if not search_text:
-        search_text = str(getattr(resume, "title", "")).strip() or "Python Backend Developer"
+    search_text = resume.keywords
 
     try:
         items = await hh_client.search_similar_vacancies(
