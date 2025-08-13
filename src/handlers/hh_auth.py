@@ -25,6 +25,7 @@ async def callback(request: Request):
 
 async def exchange_code_for_token(code: str):
     """Обменивает код авторизации на токены"""
+
     url = "https://hh.ru/oauth/token"
     data = {
         "grant_type": "authorization_code",
