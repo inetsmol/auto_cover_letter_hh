@@ -2,6 +2,7 @@
 """
 Централизованный клиент для работы с API HeadHunter.
 """
+
 import asyncio
 import datetime
 import httpx
@@ -9,6 +10,10 @@ from typing import Optional, Dict, Any
 
 from src.config import config
 from src.redis_init import redis
+
+
+
+
 
 
 class HHAPIClient:

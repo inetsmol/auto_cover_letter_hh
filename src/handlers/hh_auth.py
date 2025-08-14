@@ -1,61 +1,49 @@
 # src/handlers/hh_auth.py
-import datetime
-from datetime import timedelta
+from typing import Optional
 
-import httpx
-from fastapi import APIRouter
-from starlette.requests import Request
+from fastapi import APIRouter, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from src.config import config
-from src.models import HHToken
-from src.redis_init import redis
+from src.services.hh.auth.token_manager import tm
 
 auth_router = APIRouter()
 
 
 @auth_router.get("/hh-bot/")
 async def callback(request: Request):
-    code = request.query_params.get("code")
-    if not code:
-        return {"error": "Authorization code not found in redirect"}
+    """
+    OAuth2 callback от hh.ru:
+    - code: авторизационный код
+    - state: Telegram user_id (мы передали его при генерации ссылки)
+    """
+    code: Optional[str] = request.query_params.get("code")
+    state: Optional[str] = request.query_params.get("state")
+    if not code or not state:
+        return JSONResponse({"error": "Missing 'code' or 'state'"}, status_code=status.HTTP_400_BAD_REQUEST)
 
-    await exchange_code_for_token(code)
-    return {"status": "success", "message": "Authorization completed"}
+    try:
+        subject = int(state)
+        await tm.exchange_code(subject=subject, code=code)
+    except Exception as e:
+        return HTMLResponse(f"<html><body>Ошибка авторизации: {e}</body></html>", status_code=400)
 
+    # ❗️Не пишем ничего в Telegram.
+    # Вместо этого сразу отправляем пользователя обратно в бота на deep-link,
+    # который открывает окно ввода ссылки (AddResumeSG.ask_url).
+    bot_username = config.bot.username  # убедитесь, что задано в конфиге
+    tg_url = f"tg://resolve?domain={bot_username}&start=add_resume"
 
-async def exchange_code_for_token(code: str):
-    """Обменивает код авторизации на токены"""
-
-    url = "https://hh.ru/oauth/token"
-    data = {
-        "grant_type": "authorization_code",
-        "client_id": config.hh.client_id.get_secret_value(),
-        "client_secret": config.hh.client_secret.get_secret_value(),
-        "code": code,
-        "redirect_uri": config.hh.redirect_uri
-    }
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, data=data)
-        if response.status_code != 200:
-            return {"error": f"Failed to get tokens: {response.text}"}
-
-        tokens = response.json()
-        access_token = tokens.get("access_token")
-        refresh_token = tokens.get("refresh_token")
-        expires_in = tokens.get("expires_in", 3600)
-        expires_at = datetime.datetime.now(datetime.UTC) + timedelta(seconds=expires_in)
-
-        # Сохраняем в базу
-        await HHToken.update_or_create(
-            id=1,
-            defaults={
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "expires_at": expires_at,
-            }
-        )
-
-        # Сохраняем в Redis
-        await redis.set(config.redis.access_token_key, access_token, ex=expires_in)
-        return {"status": "success"}
+    # быстрый редирект в Telegram-клиент + запасная ссылка
+    html = f"""
+    <html>
+      <head>
+        <meta http-equiv="refresh" content="0; url={tg_url}" />
+      </head>
+      <body>
+        <p>Перенаправляем в Telegram… Если не произошло автоматически, нажмите:</p>
+        <p><a href="{tg_url}">Открыть бота</a></p>
+      </body>
+    </html>
+    """
+    return HTMLResponse(html)

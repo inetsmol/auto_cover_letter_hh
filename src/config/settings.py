@@ -23,6 +23,7 @@ class BotConfig(ConfigBase):
     webhook_path: str = "/webhook"
     admins: str = "693131974"
     admin_id: int = 693131974
+    username: str = "@auto_cover_letter_hh_bot"
 
     @property
     def admin_ids(self) -> list[int]:

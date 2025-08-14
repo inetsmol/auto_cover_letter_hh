@@ -1,3 +1,4 @@
+hh-api
 aiogram-dialog
 aiogram
 APScheduler
