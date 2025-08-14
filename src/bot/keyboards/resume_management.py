@@ -1,57 +1,26 @@
 # src/bot/keyboards/resume_management.py
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+BTN_ADD_RESUME = "➕ Добавить резюме"
+BTN_BACK_TO_MAIN = "⬅️ В главное меню"
+BTN_BACK_TO_RESUMES = "⬅️ К списку резюме"
+BTN_EDIT_KEYWORDS = "⚙️ Ключевые слова"
+BTN_EDIT_NEGATIVE = "🚫 Слова-исключения"
+BTN_TOGGLE_STATUS = "🔄 Изменить статус"
+BTN_DELETE_RESUME = "🗑️ Удалить"
 
-def resume_main_menu():
-    """
-    Главное меню раздела "Мои резюме" (только общие действия).
-    """
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="➕ Добавить резюме", callback_data="resume:add"),
-        ],
-        [
-            InlineKeyboardButton(text="⬅️ В главное меню", callback_data="menu:main"),
-        ],
-    ])
+def resumes_list_menu_numbered(titles: list[str]) -> ReplyKeyboardMarkup:
+    """Список резюме: '1) Title', '2) Title' ... — без встроенного ID."""
+    rows = [[KeyboardButton(text=f"{i+1}) {t}")] for i, t in enumerate(titles)]
+    rows.append([KeyboardButton(text=BTN_ADD_RESUME), KeyboardButton(text=BTN_BACK_TO_MAIN)])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True, one_time_keyboard=False)
 
-
-def resumes_list_menu(resumes: list[dict]):
-    """
-    Список резюме с кнопками для управления каждым резюме.
-    resumes: [{'id': '...', 'title': '...'}]
-    """
-    buttons = [
-        [InlineKeyboardButton(text=res['title'], callback_data=f"resume:manage:{res['id']}")]
-        for res in resumes
+def manage_resume_menu_plain() -> ReplyKeyboardMarkup:
+    """Меню управления выбранным резюме — без ID, используем FSM для хранения resume_id."""
+    rows = [
+        [KeyboardButton(text=BTN_EDIT_KEYWORDS), KeyboardButton(text=BTN_EDIT_NEGATIVE)],
+        [KeyboardButton(text=BTN_TOGGLE_STATUS)],
+        [KeyboardButton(text=BTN_DELETE_RESUME)],
+        [KeyboardButton(text=BTN_BACK_TO_RESUMES), KeyboardButton(text=BTN_BACK_TO_MAIN)],
     ]
-
-    buttons.append(
-        [
-            InlineKeyboardButton(text="➕ Добавить резюме", callback_data="resume:add"),
-            InlineKeyboardButton(text="⬅️ В главное меню", callback_data="menu:main")
-        ]
-    )
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
-def manage_resume_menu(resume_id: str):
-    """
-    Клавиатура для управления одним резюме.
-    """
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="⚙️ Ключевые слова", callback_data=f"resume:keywords:{resume_id}"),
-            InlineKeyboardButton(text="🚫 Слова-исключения", callback_data=f"resume:negative:{resume_id}")
-        ],
-        [
-            InlineKeyboardButton(text="🔄 Изменить статус", callback_data=f"resume:status:{resume_id}"),
-        ],
-        [
-            InlineKeyboardButton(text="🗑️ Удалить", callback_data=f"resume:delete:{resume_id}"),
-        ],
-        [
-            InlineKeyboardButton(text="⬅️ К списку резюме", callback_data="menu:resumes"),
-            InlineKeyboardButton(text="⬅️ В главное меню", callback_data="menu:main"),
-        ],
-    ])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)

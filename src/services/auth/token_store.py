@@ -67,83 +67,44 @@ class TortoiseTokenStore(KeyedTokenStore[int]):
             logging.error(f"Error getting tokens for user {subject}: {e}")
             return None
 
-    async def set_tokens(self, subject: int, tokens: TokenPair) -> None:
+    async def set_tokens(self, subject: int, new_tokens: TokenPair) -> None:
         """
         Сохранить токены для пользователя.
 
         Args:
             subject: user_id пользователя
-            tokens: TokenPair с новыми токенами
+            new_tokens: TokenPair с новыми токенами
         """
         try:
-            # Подготавливаем данные для сохранения
-            data = {
-                "access_token": tokens.access_token or "",
-                "refresh_token": tokens.refresh_token or "",
-            }
 
-            # Обрабатываем expires_at
-            if tokens.expires_at:
-                data["expires_at"] = to_dt_aware(tokens.expires_at)
-            elif tokens.expires_in:
-                # Вычисляем expires_at из expires_in
-                data["expires_at"] = datetime.now(timezone.utc).replace(microsecond=0) + \
-                                     timedelta(seconds=tokens.expires_in)
-            else:
-                data["expires_at"] = None
+            tokens, created = await HHToken.get_or_create(
+                user_id=subject,
+                defaults={
+                    "access_token": new_tokens.access_token or "",
+                    "refresh_token": new_tokens.refresh_token or "",
+                    "expires_at": new_tokens.expires_at or ""
+                }
+            )
+            if not created:
+                to_update = []
+                new_access_token = new_tokens.access_token or ""
+                new_refresh_token = new_tokens.refresh_token or ""
+                new_expires_at = new_tokens.expires_at or ""
 
-            # Обновляем или создаем запись
-            token_record = await HHToken.get_or_none(user_id=subject)
+                if tokens.access_token != new_access_token:
+                    tokens.access_token = new_access_token
+                    to_update.append("access_token")
+                if tokens.refresh_token != new_refresh_token:
+                    tokens.refresh_token = new_refresh_token
+                    to_update.append("refresh_token")
+                if tokens.expires_at != new_expires_at:
+                    tokens.expires_at = new_expires_at
+                    to_update.append("expires_at")
 
-            if token_record:
-                # Обновляем существующую запись
-                for key, value in data.items():
-                    setattr(token_record, key, value)
-                await token_record.save()
-            elif self.auto_create:
-                # Создаем новую запись
-                await HHToken.create(
-                    user_id=subject,
-                    **data
-                )
-            else:
-                raise ValueError(f"No token record for user {subject} and auto_create=False")
+                if to_update:
+                    await tokens.save(update_fields=to_update)
 
         except Exception as e:
             import logging
             logging.error(f"Error saving tokens for user {subject}: {e}")
             raise
-
-
-class SingleTenantTortoiseStore:
-    """
-    Адаптер для single-tenant сценария (backward compatibility).
-    Использует фиксированный user_id=1 для единого набора токенов.
-    """
-
-    def __init__(self, user_id: int = 1):
-        self.user_id = user_id
-        self.keyed_store = TortoiseTokenStore()
-
-    async def get_tokens(self) -> Optional[TokenPair]:
-        return await self.keyed_store.get_tokens(self.user_id)
-
-    async def set_tokens(self, tokens: TokenPair) -> None:
-        await self.keyed_store.set_tokens(self.user_id, tokens)
-
-
-# Дополнительный helper для миграции старых токенов
-async def migrate_legacy_tokens():
-    """
-    Мигрирует токены из старого формата (id=1) в новый (user_id based).
-    """
-    try:
-        # Проверяем есть ли старая запись с id=1
-        old_token = await HHToken.get_or_none(id=1)
-        if old_token and not hasattr(old_token, 'user_id'):
-            import logging
-            logging.info("Found legacy token record, migration needed")
-            # Здесь можно добавить логику миграции если нужно
-    except Exception as e:
-        import logging
-        logging.warning(f"Token migration check failed: {e}")

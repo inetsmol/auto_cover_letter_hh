@@ -1,11 +1,11 @@
 # src/bot/handlers/start.py
-from aiogram import Router, F
-from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram import Router
 from aiogram.filters import CommandStart
+from aiogram.fsm.context import FSMContext
+from aiogram.types import Message
 
-from src.config import config
 from src.bot.keyboards.main_menu import get_main_menu
+from src.config import config
 from src.models import User
 from src.services.subscription.service import ensure_subscription_for_user
 
@@ -57,28 +57,3 @@ async def start_handler(message: Message, state: FSMContext):
         text="👋 Привет! Я зарегистрировал тебя и готов к работе.",
         reply_markup=keyboard,
     )
-
-
-@router.callback_query(F.data == "menu:main")
-async def show_main_menu(call: CallbackQuery, state):
-    await call.message.delete()
-    await state.clear()
-    is_admin = call.from_user.id in config.bot.admin_ids
-    await call.message.answer(
-        "Главное меню:",
-        reply_markup=get_main_menu(is_admin)
-    )
-    await call.answer()
-
-
-@router.callback_query(F.data == "menu:cancel")
-async def cancel_and_main_menu(call: CallbackQuery, state):
-    await call.message.delete()
-    await state.clear()
-    is_admin = call.from_user.id in config.bot.admin_ids
-    await call.message.answer("Действие отменено.")
-    await call.message.answer(
-        "Главное меню:",
-        reply_markup=get_main_menu(is_admin)
-    )
-    await call.answer()
