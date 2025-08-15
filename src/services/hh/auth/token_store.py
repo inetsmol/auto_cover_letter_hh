@@ -106,3 +106,5 @@ class TortoiseTokenStore(KeyedTokenStore[int]):
             import logging
             logging.error(f"Error saving tokens for user {subject}: {e}")
             raise
+
+store = TortoiseTokenStore()

@@ -13,12 +13,8 @@ from aiogram_dialog.widgets.kbd import Button
 
 from src.bot.dialogs.common import close_all_dialogs_and_show_main_menu
 from src.bot.dialogs.resume_add.states import AddResumeSG
-from src.bot.keyboards.main_menu import get_main_menu
-from src.config import config
-from src.models import Resume, User
+from src.bot.tasks.resume import add_resume_task
 from src.services.hh.auth.token_manager import tm
-from src.services.hh_client import hh_client
-from src.services.resume.parser import extract_keywords
 from src.utils.formatters import format_resume_card
 
 # Роутер этого модуля
@@ -110,50 +106,26 @@ async def on_url_input(msg: Message, _inp: MessageInput, dialog_manager: DialogM
             "Сессия hh.ru недействительна. Авторизуйтесь и попробуйте ещё раз:\n" + auth_url
         )
         return
-
-    # 1) Тянем резюме из HH API
     try:
-        resume_json = await hh_client.get_resume(resume_id)
-    except Exception as e:
-        await msg.answer(
-            f"❗️Ошибка при получении резюме: {e}\n"
-            "Проверьте доступность резюме и корректность ссылки."
+        resume, positive_keywords = await add_resume_task(msg.from_user.id, resume_id)
+        # Кладём полезные данные (если где-то понадобятся)
+        dialog_manager.dialog_data.update({
+            "resume_id": resume_id,
+            "card": format_resume_card(resume),
+            "keywords": ", ".join(positive_keywords) if positive_keywords else "не извлечены",
+        })
+
+        # Сразу переходим в управление выбранным резюме
+        from src.bot.dialogs.resumes.states import ResumesSG  # ленивый импорт
+        await dialog_manager.start(
+            ResumesSG.manage,
+            data={"resume_id": resume_id},
+            mode=StartMode.RESET_STACK,
         )
-        return
-
-    # 2) Извлекаем ключевые слова из заголовка
-    positive_keywords = extract_keywords(resume_json.get("title", ""))
-
-    # 3) Сохраняем/обновляем в БД (привязываем к пользователю)
-    user = await User.get_or_none(id=msg.from_user.id)
-    resume, created = await Resume.get_or_create(
-        id=resume_id,
-        defaults={
-            "user": user,
-            "resume_json": resume_json,
-            "positive_keywords": positive_keywords,
-        },
-    )
-    if not created:
-        resume.user = user
-        resume.resume_json = resume_json
-        resume.positive_keywords = positive_keywords
-        await resume.save()
-
-    # 4) Кладём полезные данные (если где-то понадобятся)
-    dialog_manager.dialog_data.update({
-        "resume_id": resume_id,
-        "card": format_resume_card(resume),
-        "keywords": ", ".join(positive_keywords) if positive_keywords else "не извлечены",
-    })
-
-    # 5) Сразу переходим в управление выбранным резюме
-    from src.bot.dialogs.resumes.states import ResumesSG  # ленивый импорт
-    await dialog_manager.start(
-        ResumesSG.manage,
-        data={"resume_id": resume_id},
-        mode=StartMode.RESET_STACK,
-    )
+    except Exception:
+        await msg.answer(
+            "Неожиданная ошибка"
+        )
 
 
 async def to_manage_resume(cq: CallbackQuery, _btn: Button, dialog_manager: DialogManager):
