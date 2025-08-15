@@ -122,9 +122,9 @@ async def on_url_input(msg: Message, _inp: MessageInput, dialog_manager: DialogM
             data={"resume_id": resume_id},
             mode=StartMode.RESET_STACK,
         )
-    except Exception:
+    except Exception as e:
         await msg.answer(
-            "Неожиданная ошибка"
+            f"Неожиданная ошибка: {e}"
         )
 
 
