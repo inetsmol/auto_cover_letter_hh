@@ -8,6 +8,7 @@ from src.bot.keyboards.main_menu import get_main_menu               # ← воз
 from src.bot.keyboards.resume_management import BTN_BACK_TO_MAIN     # "⬅️ В главное меню"
 from src.bot.keyboards.common import BTN_CANCEL                      # "❌ Отмена"
 from src.config import config
+from src.models import User
 
 router = Router()
 
@@ -24,10 +25,12 @@ async def show_main_menu(message: Message, state: FSMContext) -> None:
     # 2) Проверка роли для выбора нужного меню
     is_admin = message.from_user.id in config.bot.admin_ids
 
+    user = await User.get_or_none(id=message.from_user.id)
+
     # 3) Отправляем главное меню (ReplyKeyboard)
     await message.answer(
         "Главное меню:",
-        reply_markup=get_main_menu(is_admin)
+        reply_markup=get_main_menu(is_admin=is_admin, notifications_enabled=user.notifications)
     )
 
 
@@ -45,7 +48,10 @@ async def cancel_and_main_menu(message: Message, state: FSMContext) -> None:
 
     # 3) Возврат в главное меню (ReplyKeyboard)
     is_admin = message.from_user.id in config.bot.admin_ids
+
+    user = await User.get_or_none(id=message.from_user.id)
+
     await message.answer(
         "Главное меню:",
-        reply_markup=get_main_menu(is_admin)
+        reply_markup=get_main_menu(is_admin=is_admin, notifications_enabled=user.notifications)
     )

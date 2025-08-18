@@ -37,4 +37,4 @@ async def close_all_dialogs_and_show_main_menu(cq: CallbackQuery, dialog_manager
 
     # 3) Показать главное меню (ReplyKeyboard)
     is_admin = cq.from_user.id in config.bot.admin_ids
-    await cq.message.answer("Главное меню:", reply_markup=get_main_menu(is_admin))
+    await cq.message.answer("Главное меню:", reply_markup=get_main_menu(is_admin, notifications_enabled=user.notifications))

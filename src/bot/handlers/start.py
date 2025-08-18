@@ -50,7 +50,7 @@ async def start_handler(message: Message, state: FSMContext):
 
     # 4) UI
     is_admin = u.id in config.bot.admin_ids
-    keyboard = get_main_menu(is_admin)
+    keyboard = get_main_menu(is_admin=is_admin, notifications_enabled=user.notifications)
 
     await state.clear()
     await message.answer(
