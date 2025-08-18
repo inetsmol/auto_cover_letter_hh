@@ -49,7 +49,7 @@ async def apply_for_resume_task(resume_id: str, cap: Optional[int] = None):
         job_description_text = extract_job_description_from_vacancy(vacancy)
         # print(f'job_description_text: {job_description_text}')
         cover_letter = await generate_cover_letter(resume_text, job_description_text)
-        print(f"cover_letter: {cover_letter}")
+        # print(f"cover_letter: {cover_letter}")
         try:
             await hhc.apply_to_vacancy(
                 resume_id=resume_id,
@@ -93,7 +93,7 @@ async def _main(resume_id: str, cap: int = 2) -> None:
     await init_db()
     try:
         sent = await apply_for_resume_task(resume_id, cap)
-        print(f"Отправлено откликов: {sent}")
+        # print(f"Отправлено откликов: {sent}")
     finally:
         await close_db()
         ai_teardown()
