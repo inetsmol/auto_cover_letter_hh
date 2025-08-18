@@ -11,7 +11,7 @@ BTN_ADMIN = "🛠️ Админ-панель"
 
 def notifications_button_title(enabled: bool) -> str:
     """Возвращает подпись кнопки в зависимости от статуса."""
-    return BTN_NOTIF_ON if enabled else BTN_NOTIF_OFF
+    return BTN_NOTIF_OFF if enabled else BTN_NOTIF_ON
 
 
 def user_main_menu(notifications_enabled: bool = False) -> ReplyKeyboardMarkup:

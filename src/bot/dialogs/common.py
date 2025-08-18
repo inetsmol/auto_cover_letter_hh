@@ -5,6 +5,8 @@ from aiogram_dialog import DialogManager, StartMode
 
 from src.bot.keyboards.main_menu import get_main_menu
 from src.config import config
+from src.models import User
+
 
 async def close_all_dialogs_and_show_main_menu(cq: CallbackQuery, dialog_manager: DialogManager) -> None:
     """
@@ -37,4 +39,6 @@ async def close_all_dialogs_and_show_main_menu(cq: CallbackQuery, dialog_manager
 
     # 3) Показать главное меню (ReplyKeyboard)
     is_admin = cq.from_user.id in config.bot.admin_ids
+    user = await User.get_or_none(id=cq.from_user.id)
+
     await cq.message.answer("Главное меню:", reply_markup=get_main_menu(is_admin, notifications_enabled=user.notifications))
