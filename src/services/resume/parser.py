@@ -1,4 +1,4 @@
-# src/services/resume.py
+# src/services/resume/parser.py
 import re
 from typing import List
 
@@ -37,40 +37,40 @@ def extract_keywords(text: str) -> List[str]:
     return list(dict.fromkeys(keywords))
 
 
-def extract_resume_from_resume_json(resume_json):
+def extract_resume_description_from_json(resume_data):
     """
     Извлекает информацию о резюме из JSON-ответа HeadHunter API
 
     Args:
-        resume_json (dict): JSON-ответ от API HeadHunter для резюме
+        resume_data (dict): JSON-ответ от API HeadHunter для резюме
 
     Returns:
         str: Форматированное резюме
     """
 
     # Основная информация
-    first_name = resume_json.get('first_name', '')
-    last_name = resume_json.get('last_name', '')
-    middle_name = resume_json.get('middle_name', '')
+    first_name = resume_data.get('first_name', '')
+    last_name = resume_data.get('last_name', '')
+    middle_name = resume_data.get('middle_name', '')
 
     # Формируем полное имя
     full_name_parts = [first_name, middle_name, last_name]
     full_name = ' '.join(filter(None, full_name_parts))
 
-    title = resume_json.get('title', 'Специалист')
+    title = resume_data.get('title', 'Специалист')
 
     # Возраст
     age_info = ""
-    age = resume_json.get('age')
+    age = resume_data.get('age')
     if age:
         age_info = f", {age} лет"
 
     # Локация
-    area = resume_json.get('area', {}).get('name', '')
+    area = resume_data.get('area', {}).get('name', '')
 
     # Зарплатные ожидания
     salary_info = ""
-    salary = resume_json.get('salary')
+    salary = resume_data.get('salary')
     if salary:
         amount = salary.get('amount')
         currency = salary.get('currency', 'RUR')
@@ -78,16 +78,16 @@ def extract_resume_from_resume_json(resume_json):
             salary_info = f"Зарплатные ожидания: {amount:,} {currency}"
 
     # Тип занятости и график
-    employment = resume_json.get('employment', {}).get('name', '')
-    schedule = resume_json.get('schedule', {}).get('name', '')
+    employment = resume_data.get('employment', {}).get('name', '')
+    schedule = resume_data.get('schedule', {}).get('name', '')
 
     # Готовность к переезду и командировкам
-    relocation = resume_json.get('relocation', {}).get('type', {}).get('name', '')
-    business_trip = resume_json.get('business_trip_readiness', {}).get('name', '')
+    relocation = resume_data.get('relocation', {}).get('type', {}).get('name', '')
+    business_trip = resume_data.get('business_trip_readiness', {}).get('name', '')
 
     # Контактная информация
     contacts = []
-    for contact in resume_json.get('contact', []):
+    for contact in resume_data.get('contact', []):
         contact_type = contact.get('type', {}).get('name', '')
         if contact_type == 'Эл. почта':
             email = contact.get('value', '')
@@ -103,7 +103,7 @@ def extract_resume_from_resume_json(resume_json):
                 contacts.append(phone_info)
 
     # Дополнительные способы связи
-    sites = resume_json.get('site', [])
+    sites = resume_data.get('site', [])
     for site in sites:
         site_type = site.get('type', {}).get('name', '')
         site_url = site.get('url', '')
@@ -112,7 +112,7 @@ def extract_resume_from_resume_json(resume_json):
 
     # Образование
     education_info = []
-    education = resume_json.get('education', {})
+    education = resume_data.get('education', {})
 
     # Уровень образования
     education_level = education.get('level', {}).get('name', '')
@@ -164,9 +164,9 @@ def extract_resume_from_resume_json(resume_json):
 
     # Опыт работы
     experience_info = []
-    experience = resume_json.get('experience', [])
+    experience = resume_data.get('experience', [])
 
-    total_experience = resume_json.get('total_experience', {})
+    total_experience = resume_data.get('total_experience', {})
     months = total_experience.get('months', 0)
     if months:
         years = months // 12
@@ -213,7 +213,7 @@ def extract_resume_from_resume_json(resume_json):
 
     # Языки
     languages_info = []
-    languages = resume_json.get('language', [])
+    languages = resume_data.get('language', [])
     for lang in languages:
         lang_name = lang.get('name', '')
         lang_level = lang.get('level', {}).get('name', '')
@@ -227,18 +227,18 @@ def extract_resume_from_resume_json(resume_json):
     skills_info = []
 
     # Навыки из skill_set
-    skill_set = resume_json.get('skill_set', [])
+    skill_set = resume_data.get('skill_set', [])
     if skill_set:
         skills_info.extend(skill_set)
 
     # Навыки из текстового поля
-    skills_text = resume_json.get('skills', '')
+    skills_text = resume_data.get('skills', '')
     if skills_text:
         skills_info.append(skills_text)
 
     # Профессиональные роли
     professional_roles = []
-    for role in resume_json.get('professional_roles', []):
+    for role in resume_data.get('professional_roles', []):
         role_name = role.get('name', '')
         if role_name:
             professional_roles.append(role_name)

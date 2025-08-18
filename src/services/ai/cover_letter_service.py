@@ -21,7 +21,7 @@ async def generate_cover_letter(resume_text: str, vacancy_text: str) -> str:
         {"role": "user", "content": user_prompt},
     ]
 
-    # Можно подстраивать параметры под конкретные шаблоны
+    # Генерируем
     text = await chat_complete(
         messages
     )

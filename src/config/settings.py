@@ -77,6 +77,7 @@ class HH(ConfigBase):
     redirect_uri: str
     token_url: str
     resume_url: str
+    user_agent: str
 
     @property
     def auth_url(self) -> str:

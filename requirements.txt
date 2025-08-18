@@ -11,5 +11,6 @@ pydantic-settings
 uvicorn
 fastapi
 httpx
+httpx[http2]
 openai
 celery[redis]
