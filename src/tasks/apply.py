@@ -26,6 +26,7 @@ async def apply_for_resume_task(resume_id: str, cap: Optional[int] = None):
     hhc = HHClient(tm=tm, user_agent=config.hh.user_agent, subject=user_id)
 
     text = getattr(resume, "keywords", "") or ""
+    negative_keywords = resume.negative_keywords
     resume_json = await hhc.get_resume(resume_id)
     resume_text = extract_resume_description_from_json(resume_json)
 
@@ -72,31 +73,47 @@ async def apply_for_resume_task(resume_id: str, cap: Optional[int] = None):
 
 
 async def _main(resume_id: str, cap: int = 2) -> None:
-    """
-    Тестовый запуск apply_for_resume_task:
-    - поднимаем пул OpenAI (фон. event loop + httpx),
-    - инициализируем Tortoise ORM,
-    - выполняем задачу, печатаем кол-во отправленных откликов,
-    - корректно закрываем ресурсы.
-    """
-    # 1) Инициализируем пул OpenAI (важно: до вызова apply_for_resume_task)
-    ai_setup(OpenAISettings(
-        api_key=config.ai.openai_api_key.get_secret_value(),
-        proxy_url=(config.ai.proxy_url or None),
-        connect_timeout=15.0,
-        read_timeout=60.0,
-        pool_timeout=60.0,
-        http2=True,
-    ))
-
-    # 2) Инициализация БД (иначе будет ошибка default_connection is None)
     await init_db()
-    try:
-        sent = await apply_for_resume_task(resume_id, cap)
-        # print(f"Отправлено откликов: {sent}")
-    finally:
-        await close_db()
-        ai_teardown()
+    resume = await Resume.get(id=resume_id)
+    user_id = resume.user_id
+    text = getattr(resume, "keywords", "") or ""
+    negative_keywords = resume.negative_keywords
+    hhc = HHClient(tm=tm, user_agent=config.hh.user_agent, subject=user_id)
+
+    items = await hhc.search_similar_vacancies(resume_id=resume_id, text=text, per_page=1)
+    for item in items:
+        vacancy_id = item.get('id')
+        name = item.get('name')
+        print(name)
+        # print(item)
+
+    await close_db()
+    # print(f"text: {text}")
+    # """
+    # Тестовый запуск apply_for_resume_task:
+    # - поднимаем пул OpenAI (фон. event loop + httpx),
+    # - инициализируем Tortoise ORM,
+    # - выполняем задачу, печатаем кол-во отправленных откликов,
+    # - корректно закрываем ресурсы.
+    # """
+    # # 1) Инициализируем пул OpenAI (важно: до вызова apply_for_resume_task)
+    # ai_setup(OpenAISettings(
+    #     api_key=config.ai.openai_api_key.get_secret_value(),
+    #     proxy_url=(config.ai.proxy_url or None),
+    #     connect_timeout=15.0,
+    #     read_timeout=60.0,
+    #     pool_timeout=60.0,
+    #     http2=True,
+    # ))
+    #
+    # # 2) Инициализация БД (иначе будет ошибка default_connection is None)
+    # await init_db()
+    # try:
+    #     sent = await apply_for_resume_task(resume_id, cap)
+    #     # print(f"Отправлено откликов: {sent}")
+    # finally:
+    #     await close_db()
+    #     ai_teardown()
 
 
 if __name__ == "__main__":

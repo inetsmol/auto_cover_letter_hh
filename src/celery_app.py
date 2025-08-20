@@ -9,7 +9,7 @@ celery_app = Celery(
     "hh_bot",
     broker=config.redis.dsn,
     backend=config.redis.dsn,
-    include=["src.workers.apply"],
+    include=["src.workers.apply", "src.workers.notification_sender_worker"],
 )
 
 celery_app.conf.timezone = "Europe/Moscow"
@@ -21,6 +21,7 @@ celery_app.conf.task_soft_time_limit = 40  # soft limit
 celery_app.conf.task_queues = (
     Queue("celery"),
     Queue("free"),
+    Queue("notifications"),
 )
 celery_app.conf.task_default_queue = "celery"
 
@@ -34,5 +35,17 @@ celery_app.conf.beat_schedule = {
         "task": "src.workers.apply.run_free_daily",
         "schedule": crontab(minute=0, hour=12),
         "options": {"queue": "free"},
+    },
+    # # каждые 15 минут
+    # "notifications-every-15m": {
+    #     "task": "src.workers.notification_sender_worker.run_notifications_every_15m",
+    #     "schedule": crontab(minute="*/15"),
+    #     "options": {"queue": "notifications"},
+    # },
+    # раз в день в 15:00 по Москве
+    "notifications-daily-15msk": {
+        "task": "src.workers.notification_sender_worker.run_notifications_daily",
+        "schedule": crontab(minute=0, hour=15),
+        "options": {"queue": "notifications"},
     },
 }

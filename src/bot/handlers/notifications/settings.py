@@ -23,8 +23,6 @@ async def toggle_notifications(message: Message):
     user.notifications = not user.notifications
     await user.save()
 
-    print(f"user.notifications: {user.notifications}")
-
     status_text = "включены" if user.notifications else "выключены"
 
     is_admin = user.id in config.bot.admin_ids

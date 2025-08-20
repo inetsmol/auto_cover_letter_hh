@@ -38,7 +38,7 @@
 
 #### Запустить воркер
 ```bash
-celery -A src.celery_app.celery_app worker -l info --queues=celery,free --pool=solo
+celery -A src.celery_app.celery_app worker -l info --queues=celery,free,notifications --pool=solo
 ```
 #### Запустить планировщик
 ```bash
